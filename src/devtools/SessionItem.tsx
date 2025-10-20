@@ -65,7 +65,6 @@ export default function SessionItem(props: Props) {
                     backgroundColor: 'rgba(25, 118, 210, 0.1)',
                     border: '2px dashed #1976d2',
                     borderRadius: '4px',
-                    transform: 'rotate(2deg)',
                     '& *': {
                         visibility: 'hidden'
                     },
