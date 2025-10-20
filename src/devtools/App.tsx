@@ -40,6 +40,9 @@ function Main() {
     const [needCheckUpdate, setNeedCheckUpdate] = useState(true)
 
     const [scrollToMsg, setScrollToMsg] = useState<{ msgId: string, smooth?: boolean }>(null)
+
+    const [draggedSession, setDraggedSession] = useState<string | null>(null)
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
     useEffect(() => {
         if (!scrollToMsg) {
             return
@@ -144,6 +147,64 @@ function Main() {
         document.getElementById('message-input')?.focus() // better way?
     }, [messageInput])
 
+    const handleDragStart = (sessionId: string) => {
+        console.log('Drag start:', sessionId)
+        setDraggedSession(sessionId)
+    }
+
+    const handleDragEnd = () => {
+        console.log('Drag end')
+        setDraggedSession(null)
+        setDragOverIndex(null)
+    }
+
+    const handleDragOver = (event: React.DragEvent, targetIndex: number) => {
+        event.preventDefault()
+        console.log('Drag over index:', targetIndex)
+        setDragOverIndex(targetIndex)
+    }
+
+    // Reorder sessions function
+    const reorderSessions = (fromIndex: number, toIndex: number) => {
+        if (fromIndex === toIndex) {
+            console.log('Same position, no reorder needed')
+            return
+        }
+        
+        console.log(`Reordering from index ${fromIndex} to index ${toIndex}`)
+        const newSessions = [...store.chatSessions]
+        const [removed] = newSessions.splice(fromIndex, 1)
+        newSessions.splice(toIndex, 0, removed)
+        
+        store.setSessions(newSessions)
+        
+        if (removed.id === store.currentSession.id) {
+            console.log('Maintaining selection of dragged session after reorder')
+            store.switchCurrentSession(removed)
+        }
+    }
+
+    const handleDrop = (event: React.DragEvent, targetIndex: number) => {
+        event.preventDefault()
+        console.log('Drop at index:', targetIndex)
+        
+        if (!draggedSession) {
+            console.log('No dragged session found')
+            return
+        }
+        
+        const fromIndex = store.chatSessions.findIndex(session => session.id === draggedSession)
+        if (fromIndex === -1) {
+            console.log('Could not find dragged session in array')
+            return
+        }
+        
+        reorderSessions(fromIndex, targetIndex)
+        
+        setDraggedSession(null)
+        setDragOverIndex(null)
+    }
+
     return (
         <Box sx={{
             height: '100%',
@@ -194,8 +255,11 @@ function Main() {
                         >
                             {
                                 store.chatSessions.map((session, ix) => (
-                                    <SessionItem selected={store.currentSession.id === session.id}
+                                    <SessionItem 
+                                        key={session.id}
+                                        selected={store.currentSession.id === session.id}
                                         session={session}
+                                        index={ix}
                                         switchMe={() => {
                                             store.switchCurrentSession(session)
                                             document.getElementById('message-input')?.focus() // better way?
@@ -207,6 +271,11 @@ function Main() {
                                             store.createChatSession(newSession, ix)
                                         }}
                                         editMe={() => setConfigureChatConfig(session)}
+                                        onDragStart={handleDragStart}
+                                        onDragEnd={handleDragEnd}
+                                        onDragOver={handleDragOver}
+                                        onDrop={handleDrop}
+                                        isDragging={draggedSession === session.id}
                                     />
                                 ))
                             }
