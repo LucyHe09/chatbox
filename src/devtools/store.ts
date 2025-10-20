@@ -176,6 +176,7 @@ export default function useStore() {
         needSetting,
 
         chatSessions,
+        setSessions,
         createChatSession,
         updateChatSession,
         deleteChatSession,

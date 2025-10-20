@@ -40,6 +40,9 @@ function Main() {
     const [needCheckUpdate, setNeedCheckUpdate] = useState(true)
 
     const [scrollToMsg, setScrollToMsg] = useState<{ msgId: string, smooth?: boolean }>(null)
+
+    const [draggedSession, setDraggedSession] = useState<string | null>(null)
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
     useEffect(() => {
         if (!scrollToMsg) {
             return
@@ -144,6 +147,54 @@ function Main() {
         document.getElementById('message-input')?.focus() // better way?
     }, [messageInput])
 
+    const handleDragStart = (sessionId: string) => {
+        setDraggedSession(sessionId)
+    }
+
+    const handleDragEnd = () => {
+        setDraggedSession(null)
+        setDragOverIndex(null)
+    }
+
+    const handleDragOver = (event: React.DragEvent, targetIndex: number) => {
+        event.preventDefault()
+        setDragOverIndex(targetIndex)
+    }
+
+    const reorderSessions = (fromIndex: number, toIndex: number) => {
+        if (fromIndex === toIndex) {
+            return
+        }
+        
+        const newSessions = [...store.chatSessions]
+        const [removed] = newSessions.splice(fromIndex, 1)
+        newSessions.splice(toIndex, 0, removed)
+        
+        store.setSessions(newSessions)
+        
+        if (removed.id === store.currentSession.id) {
+            store.switchCurrentSession(removed)
+        }
+    }
+
+    const handleDrop = (event: React.DragEvent, targetIndex: number) => {
+        event.preventDefault()
+        
+        if (!draggedSession) {
+            return
+        }
+        
+        const fromIndex = store.chatSessions.findIndex(session => session.id === draggedSession)
+        if (fromIndex === -1) {
+            return
+        }
+        
+        reorderSessions(fromIndex, targetIndex)
+        
+        setDraggedSession(null)
+        setDragOverIndex(null)
+    }
+
     return (
         <Box sx={{
             height: '100%',
@@ -194,8 +245,11 @@ function Main() {
                         >
                             {
                                 store.chatSessions.map((session, ix) => (
-                                    <SessionItem selected={store.currentSession.id === session.id}
+                                    <SessionItem 
+                                        key={session.id}
+                                        selected={store.currentSession.id === session.id}
                                         session={session}
+                                        index={ix}
                                         switchMe={() => {
                                             store.switchCurrentSession(session)
                                             document.getElementById('message-input')?.focus() // better way?
@@ -207,6 +261,11 @@ function Main() {
                                             store.createChatSession(newSession, ix)
                                         }}
                                         editMe={() => setConfigureChatConfig(session)}
+                                        onDragStart={handleDragStart}
+                                        onDragEnd={handleDragEnd}
+                                        onDragOver={handleDragOver}
+                                        onDrop={handleDrop}
+                                        isDragging={draggedSession === session.id}
                                     />
                                 ))
                             }
