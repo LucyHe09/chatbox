@@ -91,7 +91,6 @@ function Main() {
 
     const [sessionClean, setSessionClean] = React.useState<Session | null>(null);
     
-    // State for delete confirmation dialog
     const [sessionToDelete, setSessionToDelete] = React.useState<Session | null>(null);
 
     const generateName = async (session: Session) => {
@@ -148,7 +147,6 @@ function Main() {
         document.getElementById('message-input')?.focus() // better way?
     }, [messageInput])
 
-    // Handlers for delete confirmation dialog
     const handleOpenDeleteDialog = (session: Session) => {
         setSessionToDelete(session)
     }
