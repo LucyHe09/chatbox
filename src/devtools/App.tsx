@@ -21,6 +21,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import * as prompts from './prompts'
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CleanWidnow from './CleanWindow';
+import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import { ThemeSwitcherProvider } from './theme/ThemeSwitcher';
 
 const { useEffect, useState } = React
@@ -89,6 +90,18 @@ function Main() {
     const [configureChatConfig, setConfigureChatConfig] = React.useState<Session | null>(null);
 
     const [sessionClean, setSessionClean] = React.useState<Session | null>(null);
+    
+    // State for delete confirmation dialog
+    const [sessionToDelete, setSessionToDelete] = React.useState<Session | null>(null);
+    
+    // Debug: Log when dialog state changes (Milestone 3)
+    useEffect(() => {
+        if (sessionToDelete) {
+            console.log('[Milestone 3] Dialog opened for session:', sessionToDelete.name)
+        } else {
+            console.log('[Milestone 3] Dialog closed')
+        }
+    }, [sessionToDelete])
 
     const generateName = async (session: Session) => {
         client.replay(
@@ -143,6 +156,26 @@ function Main() {
     useEffect(() => {
         document.getElementById('message-input')?.focus() // better way?
     }, [messageInput])
+
+    // Handlers for delete confirmation dialog
+    const handleOpenDeleteDialog = (session: Session) => {
+        console.log('[Milestone 4] Delete button clicked - opening dialog for session:', session.name)
+        setSessionToDelete(session)
+    }
+
+    const handleConfirmDelete = () => {
+        if (sessionToDelete) {
+            console.log('[Milestone 2] Confirming deletion of session:', sessionToDelete.name)
+            store.deleteChatSession(sessionToDelete)
+            setSessionToDelete(null)
+            console.log('[Milestone 2] Session deleted successfully')
+        }
+    }
+
+    const handleCancelDelete = () => {
+        console.log('[Milestone 2] Canceling delete dialog for session:', sessionToDelete?.name)
+        setSessionToDelete(null)
+    }
 
     return (
         <Box sx={{
@@ -200,7 +233,7 @@ function Main() {
                                             store.switchCurrentSession(session)
                                             document.getElementById('message-input')?.focus() // better way?
                                         }}
-                                        deleteMe={() => store.deleteChatSession(session)}
+                                        deleteMe={() => handleOpenDeleteDialog(session)}
                                         copyMe={() => {
                                             const newSession = createSession(session.name + ' Copyed')
                                             newSession.messages = session.messages
@@ -389,6 +422,18 @@ function Main() {
                         />
                     )
                 }
+                <DeleteConfirmationDialog
+                    open={sessionToDelete !== null}
+                    sessionName={sessionToDelete?.name || ''}
+                    onConfirm={() => {
+                        console.log('[Milestone 3] Delete button clicked in dialog')
+                        handleConfirmDelete()
+                    }}
+                    onCancel={() => {
+                        console.log('[Milestone 3] Cancel button clicked in dialog')
+                        handleCancelDelete()
+                    }}
+                />
                 {
                     store.toasts.map((toast) => (
                         <Snackbar
