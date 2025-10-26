@@ -93,15 +93,6 @@ function Main() {
     
     // State for delete confirmation dialog
     const [sessionToDelete, setSessionToDelete] = React.useState<Session | null>(null);
-    
-    // Debug: Log when dialog state changes (Milestone 3)
-    useEffect(() => {
-        if (sessionToDelete) {
-            console.log('[Milestone 3] Dialog opened for session:', sessionToDelete.name)
-        } else {
-            console.log('[Milestone 3] Dialog closed')
-        }
-    }, [sessionToDelete])
 
     const generateName = async (session: Session) => {
         client.replay(
@@ -159,21 +150,17 @@ function Main() {
 
     // Handlers for delete confirmation dialog
     const handleOpenDeleteDialog = (session: Session) => {
-        console.log('[Milestone 4] Delete button clicked - opening dialog for session:', session.name)
         setSessionToDelete(session)
     }
 
     const handleConfirmDelete = () => {
         if (sessionToDelete) {
-            console.log('[Milestone 2] Confirming deletion of session:', sessionToDelete.name)
             store.deleteChatSession(sessionToDelete)
             setSessionToDelete(null)
-            console.log('[Milestone 2] Session deleted successfully')
         }
     }
 
     const handleCancelDelete = () => {
-        console.log('[Milestone 2] Canceling delete dialog for session:', sessionToDelete?.name)
         setSessionToDelete(null)
     }
 
@@ -425,14 +412,8 @@ function Main() {
                 <DeleteConfirmationDialog
                     open={sessionToDelete !== null}
                     sessionName={sessionToDelete?.name || ''}
-                    onConfirm={() => {
-                        console.log('[Milestone 3] Delete button clicked in dialog')
-                        handleConfirmDelete()
-                    }}
-                    onCancel={() => {
-                        console.log('[Milestone 3] Cancel button clicked in dialog')
-                        handleCancelDelete()
-                    }}
+                    onConfirm={handleConfirmDelete}
+                    onCancel={handleCancelDelete}
                 />
                 {
                     store.toasts.map((toast) => (
