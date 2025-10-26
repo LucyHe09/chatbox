@@ -21,6 +21,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import * as prompts from './prompts'
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CleanWidnow from './CleanWindow';
+import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import { ThemeSwitcherProvider } from './theme/ThemeSwitcher';
 
 const { useEffect, useState } = React
@@ -89,6 +90,8 @@ function Main() {
     const [configureChatConfig, setConfigureChatConfig] = React.useState<Session | null>(null);
 
     const [sessionClean, setSessionClean] = React.useState<Session | null>(null);
+    
+    const [sessionToDelete, setSessionToDelete] = React.useState<Session | null>(null);
 
     const generateName = async (session: Session) => {
         client.replay(
@@ -143,6 +146,21 @@ function Main() {
     useEffect(() => {
         document.getElementById('message-input')?.focus() // better way?
     }, [messageInput])
+
+    const handleOpenDeleteDialog = (session: Session) => {
+        setSessionToDelete(session)
+    }
+
+    const handleConfirmDelete = () => {
+        if (sessionToDelete) {
+            store.deleteChatSession(sessionToDelete)
+            setSessionToDelete(null)
+        }
+    }
+
+    const handleCancelDelete = () => {
+        setSessionToDelete(null)
+    }
 
     return (
         <Box sx={{
@@ -200,7 +218,7 @@ function Main() {
                                             store.switchCurrentSession(session)
                                             document.getElementById('message-input')?.focus() // better way?
                                         }}
-                                        deleteMe={() => store.deleteChatSession(session)}
+                                        deleteMe={() => handleOpenDeleteDialog(session)}
                                         copyMe={() => {
                                             const newSession = createSession(session.name + ' Copyed')
                                             newSession.messages = session.messages
@@ -389,6 +407,12 @@ function Main() {
                         />
                     )
                 }
+                <DeleteConfirmationDialog
+                    open={sessionToDelete !== null}
+                    sessionName={sessionToDelete?.name || ''}
+                    onConfirm={handleConfirmDelete}
+                    onCancel={handleCancelDelete}
+                />
                 {
                     store.toasts.map((toast) => (
                         <Snackbar
