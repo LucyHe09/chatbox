@@ -122,13 +122,22 @@ export default function useStore() {
     }
 
     const deleteChatSession = (target: Session) => {
+        const targetIndex = chatSessions.findIndex((s) => s.id === target.id)
+
         const sessions = chatSessions.filter((s) => s.id !== target.id)
         if (sessions.length === 0) {
             sessions.push(createSession())
         }
+
         if (target.id === currentSession.id) {
-            switchCurrentSession(sessions[0])
+            if (targetIndex > 0) {
+                const newIndex = Math.min(targetIndex - 1, sessions.length - 1)
+                switchCurrentSession(sessions[newIndex])
+            } else {
+                switchCurrentSession(sessions[0])
+            }
         }
+
         setSessions(sessions)
     }
     const updateChatSession = (session: Session) => {
