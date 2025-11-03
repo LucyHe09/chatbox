@@ -31,8 +31,6 @@ export default function SessionItem(props: Props) {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        // Prevent the click from bubbling up to the parent MenuItem which would
-        // trigger `switchMe()` (re-selecting the session) when opening the menu.
         event.stopPropagation()
         event.preventDefault()
         setAnchorEl(event.currentTarget);
