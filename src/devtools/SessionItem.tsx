@@ -31,6 +31,9 @@ export default function SessionItem(props: Props) {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        // Prevent the click from bubbling up to the parent MenuItem which would
+        // trigger `switchMe()` (re-selecting the session) when opening the menu.
+        event.stopPropagation()
         event.preventDefault()
         setAnchorEl(event.currentTarget);
     };
@@ -63,7 +66,8 @@ export default function SessionItem(props: Props) {
                 open={open}
                 onClose={handleClose}
             >
-                <MenuItem key={session.id + 'edit'} onClick={() => {
+                <MenuItem key={session.id + 'edit'} onClick={(e: React.MouseEvent<HTMLElement>) => {
+                    e.stopPropagation()
                     editMe()
                     handleClose()
                 }} disableRipple>
@@ -71,7 +75,8 @@ export default function SessionItem(props: Props) {
                     Rename
                 </MenuItem>
 
-                <MenuItem key={session.id + 'copy'} onClick={() => {
+                <MenuItem key={session.id + 'copy'} onClick={(e: React.MouseEvent<HTMLElement>) => {
+                    e.stopPropagation()
                     copyMe()
                     handleClose()
                 }} disableRipple>
@@ -81,7 +86,8 @@ export default function SessionItem(props: Props) {
 
                 <Divider sx={{ my: 0.5 }} />
 
-                <MenuItem key={session.id + 'del'} onClick={() => {
+                <MenuItem key={session.id + 'del'} onClick={(e: React.MouseEvent<HTMLElement>) => {
+                    e.stopPropagation()
                     setAnchorEl(null)
                     handleClose()
                     deleteMe()

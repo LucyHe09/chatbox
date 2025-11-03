@@ -122,13 +122,25 @@ export default function useStore() {
     }
 
     const deleteChatSession = (target: Session) => {
+        // Find the index of the target BEFORE filtering because indices shift after removal
+        const targetIndex = chatSessions.findIndex((s) => s.id === target.id)
+
         const sessions = chatSessions.filter((s) => s.id !== target.id)
         if (sessions.length === 0) {
             sessions.push(createSession())
         }
+
         if (target.id === currentSession.id) {
-            switchCurrentSession(sessions[0])
+            // If there was a session before the deleted one, navigate to it.
+            // Otherwise (deleted was at index 0), navigate to the new index 0.
+            if (targetIndex > 0) {
+                const newIndex = Math.min(targetIndex - 1, sessions.length - 1)
+                switchCurrentSession(sessions[newIndex])
+            } else {
+                switchCurrentSession(sessions[0])
+            }
         }
+
         setSessions(sessions)
     }
     const updateChatSession = (session: Session) => {
