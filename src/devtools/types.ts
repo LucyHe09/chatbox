@@ -4,6 +4,15 @@ import { ThemeMode } from './theme';
 
 export type Message = ChatCompletionRequestMessage & {
     id: string
+    // Optional metadata for UI features (reasoning timers, flags, etc.)
+    metadata?: {
+        // whether this message is a reasoning-type block (controls timer visibility)
+        reasoning?: boolean
+        // final persisted duration in milliseconds (optional)
+        reasoningTimerMs?: number | null
+        // allow other metadata fields
+        [key: string]: any
+    }
 }
 
 export interface Session{

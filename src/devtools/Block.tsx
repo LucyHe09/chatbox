@@ -1,4 +1,7 @@
 import { useEffect, useState, useRef ,useMemo } from 'react';
+import ElapsedDisplay from './ElapsedDisplay'
+import useReasoningTimer from './hooks/useReasoningTimer'
+import React from 'react'
 import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from './openai-node';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
@@ -47,6 +50,11 @@ md.use(mila, { attrs: { target: "_blank", rel: "noopener" } })
 
 export type Message = ChatCompletionRequestMessage & {
     id: string
+    metadata?: {
+        reasoning?: boolean
+        reasoningTimerMs?: number | null
+        [key: string]: any
+    }
 }
 
 export interface Props {
@@ -134,9 +142,23 @@ function _Block(props: Props) {
                 <Grid item xs={11} sm container>
                     <Grid item xs container direction="column" spacing={2}>
                         <Grid item xs>
-                            <Typography variant="overline" component="div">
-                                {msg.role}
-                            </Typography>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="overline" component="div">
+                                    {msg.role}
+                                </Typography>
+                                {
+                                    // If a final duration already exists, show it (static)
+                                    msg.metadata && typeof msg.metadata.reasoningTimerMs === 'number' && (
+                                        <ElapsedDisplay finalMs={msg.metadata.reasoningTimerMs} />
+                                    )
+                                }
+                                {
+                                    // If message is a reasoning block and streaming, show live timer via hook
+                                    msg.metadata && msg.metadata.reasoning && (
+                                        <ReasoningTimerWrapper msg={msg} />
+                                    )
+                                }
+                            </div>
                             {
                                 isEditing ? (
                                     <TextField
@@ -283,4 +305,27 @@ export default function Block(props: Props) {
     return useMemo(() => {
         return <_Block {...props} />
     }, [props.msg, props.showWordCount, props.showTokenCount])
+}
+
+function ReasoningTimerWrapper({ msg }: { msg: Message }) {
+    const { running, elapsedMs, finalMs, start, stop } = useReasoningTimer(msg.id)
+
+    // auto-start if the message has a streaming flag in metadata
+    React.useEffect(() => {
+        if (msg.metadata && msg.metadata.streaming) {
+            start()
+        }
+        return () => {
+            // do not persist final here; just stop updates
+            stop()
+        }
+    }, [msg.metadata && msg.metadata.streaming])
+
+    // if there's a persisted final duration, show that
+    if (msg.metadata && typeof msg.metadata.reasoningTimerMs === 'number') {
+        return <ElapsedDisplay finalMs={msg.metadata.reasoningTimerMs} />
+    }
+
+    // show live elapsed when running, otherwise show placeholder
+    return <ElapsedDisplay running={running} elapsedMs={elapsedMs} finalMs={null} />
 }

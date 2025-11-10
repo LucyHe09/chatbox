@@ -3,6 +3,7 @@ import './App.css';
 import Block from './Block'
 import * as client from './client'
 import SessionItem from './SessionItem'
+import { startTimerForId, setFinalTimerForId, stopTimerForId } from './hooks/useReasoningTimer'
 import {
     Toolbar, Box, Badge, Snackbar,
     List, ListSubheader, ListItemText, MenuList,
@@ -107,36 +108,77 @@ function Main() {
     }
 
     const generate = async (session: Session, promptMsgs: Message[], targetMsg: Message) => {
-        await client.replay(
-            store.settings.openaiKey,
-            store.settings.apiHost,
-            promptMsgs,
-            (text) => {
-                for (let i = 0; i < session.messages.length; i++) {
-                    if (session.messages[i].id === targetMsg.id) {
-                        session.messages[i] = {
-                            ...session.messages[i],
-                            content: text,
+        // mark message as reasoning & streaming and record start
+        if (!targetMsg.metadata) targetMsg.metadata = {}
+        targetMsg.metadata.reasoning = true
+        targetMsg.metadata.streaming = true
+        // use performance.now for higher resolution; persistable timestamp (ms since epoch) not required here
+        const startMs = performance.now()
+        targetMsg.metadata._reasoningStart = startMs
+        store.updateChatSession(session)
+
+        // start shared timer (updates UI)
+        startTimerForId(targetMsg.id)
+
+        try {
+            await client.replay(
+                store.settings.openaiKey,
+                store.settings.apiHost,
+                promptMsgs,
+                (text) => {
+                    for (let i = 0; i < session.messages.length; i++) {
+                        if (session.messages[i].id === targetMsg.id) {
+                            session.messages[i] = {
+                                ...session.messages[i],
+                                content: text,
+                            }
+                            break
                         }
-                        break
                     }
-                }
-                store.updateChatSession(session)
-                setScrollToMsg({ msgId: targetMsg.id, smooth: false })
-            },
-            (err) => {
-                for (let i = 0; i < session.messages.length; i++) {
-                    if (session.messages[i].id === targetMsg.id) {
-                        session.messages[i] = {
-                            ...session.messages[i],
-                            content: 'API Request Failed: \n```\n' + err.message + '\n```',
+                    store.updateChatSession(session)
+                    setScrollToMsg({ msgId: targetMsg.id, smooth: false })
+                },
+                (err) => {
+                    // on error, record failure text and persist final duration
+                    for (let i = 0; i < session.messages.length; i++) {
+                        if (session.messages[i].id === targetMsg.id) {
+                            session.messages[i] = {
+                                ...session.messages[i],
+                                content: 'API Request Failed: \n```\n' + err.message + '\n```',
+                            }
+                            break
                         }
-                        break
                     }
+                    // compute final duration
+                    const finalMs = Math.round(performance.now() - startMs)
+                    targetMsg.metadata.reasoningTimerMs = finalMs
+                    targetMsg.metadata.streaming = false
+                    // notify timer manager
+                    setFinalTimerForId(targetMsg.id, finalMs)
+                    stopTimerForId(targetMsg.id)
+                    store.updateChatSession(session)
                 }
-                store.updateChatSession(session)
+            )
+
+            // on success, compute final duration and persist
+            const finalMs = Math.round(performance.now() - startMs)
+            targetMsg.metadata.reasoningTimerMs = finalMs
+            targetMsg.metadata.streaming = false
+            setFinalTimerForId(targetMsg.id, finalMs)
+            stopTimerForId(targetMsg.id)
+            store.updateChatSession(session)
+        } catch (error) {
+            // replay throws after calling onError - we've already handled err in callback, but ensure metadata is consistent
+            if (!targetMsg.metadata) targetMsg.metadata = {}
+            if (typeof targetMsg.metadata._reasoningStart === 'number') {
+                const finalMs = Math.round(performance.now() - targetMsg.metadata._reasoningStart)
+                targetMsg.metadata.reasoningTimerMs = finalMs
+                setFinalTimerForId(targetMsg.id, finalMs)
+                stopTimerForId(targetMsg.id)
             }
-        )
+            targetMsg.metadata.streaming = false
+            store.updateChatSession(session)
+        }
     }
 
     const [ messageInput, setMessageInput ] = useState('')
