@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 
 type Subscriber = (state: { running: boolean; elapsedMs: number; finalMs: number | null }) => void
 
@@ -8,7 +8,7 @@ class TimerManager {
     interval?: number
     tickMs: number
 
-    constructor(tickMs = 300) {
+    constructor(tickMs = 100) {
         this.timers = new Map()
         this.subs = new Map()
         this.tickMs = tickMs
@@ -97,7 +97,7 @@ class TimerManager {
     }
 }
 
-const manager = new TimerManager(300)
+const manager = new TimerManager(100)
 
 // exported helpers for non-react contexts to control timers by id
 export function startTimerForId(messageId: string) {
@@ -130,18 +130,20 @@ export function useReasoningTimer(messageId?: string) {
         return unsub
     }, [messageId])
 
-    const start = () => {
+    const start = useCallback(() => {
         if (!messageId) return
         manager.start(messageId)
-    }
-    const stop = () => {
+    }, [messageId])
+
+    const stop = useCallback(() => {
         if (!messageId) return
         manager.stop(messageId)
-    }
-    const setFinal = (ms: number) => {
+    }, [messageId])
+
+    const setFinal = useCallback((ms: number) => {
         if (!messageId) return
         manager.setFinal(messageId, ms)
-    }
+    }, [messageId])
 
     return { running, elapsedMs, finalMs, start, stop, setFinal }
 }

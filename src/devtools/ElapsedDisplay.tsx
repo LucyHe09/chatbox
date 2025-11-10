@@ -8,12 +8,26 @@ export interface ElapsedDisplayProps {
     running?: boolean
 }
 
+function formatDuration(ms: number): string {
+    const totalSeconds = ms / 1000
+
+    if (totalSeconds < 60) {
+        // For durations under 60 seconds, show decimal: "3.2s"
+        return `${totalSeconds.toFixed(1)}s`
+    }
+
+    // For durations 60 seconds or more, show minutes and seconds: "1m 23s"
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = Math.floor(totalSeconds % 60)
+    return `${minutes}m ${seconds}s`
+}
+
 export default function ElapsedDisplay({ finalMs, elapsedMs = 0, running = false }: ElapsedDisplayProps) {
     let text: string
     if (finalMs != null) {
-        text = `⏱ ${(finalMs / 1000).toFixed(1)}s`
+        text = `⏱ ${formatDuration(finalMs)}`
     } else if (running) {
-        text = `⏱ ${(elapsedMs / 1000).toFixed(1)}s`
+        text = `⏱ ${formatDuration(elapsedMs)}`
     } else {
         text = '⏱ 0.0s'
     }

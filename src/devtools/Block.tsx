@@ -147,15 +147,12 @@ function _Block(props: Props) {
                                     {msg.role}
                                 </Typography>
                                 {
-                                    // If a final duration already exists, show it (static)
-                                    msg.metadata && typeof msg.metadata.reasoningTimerMs === 'number' && (
-                                        <ElapsedDisplay finalMs={msg.metadata.reasoningTimerMs} />
-                                    )
-                                }
-                                {
-                                    // If message is a reasoning block and streaming, show live timer via hook
+                                    // Show timer for reasoning blocks (handles both streaming and completed states)
                                     msg.metadata && msg.metadata.reasoning && (
-                                        <ReasoningTimerWrapper msg={msg} />
+                                        <ReasoningTimerWrapper
+                                            msgId={msg.id}
+                                            finalMs={msg.metadata.reasoningTimerMs}
+                                        />
                                     )
                                 }
                             </div>
@@ -304,28 +301,38 @@ const StyledMenu = styled((props: MenuProps) => (
 export default function Block(props: Props) {
     return useMemo(() => {
         return <_Block {...props} />
-    }, [props.msg, props.showWordCount, props.showTokenCount])
+    }, [
+        props.msg.id,
+        props.msg.content,
+        props.msg.role,
+        props.msg.metadata?.reasoning,
+        props.msg.metadata?.streaming,
+        props.msg.metadata?.reasoningTimerMs,
+        props.showWordCount,
+        props.showTokenCount
+    ])
 }
 
-function ReasoningTimerWrapper({ msg }: { msg: Message }) {
-    const { running, elapsedMs, finalMs, start, stop } = useReasoningTimer(msg.id)
-
-    // auto-start if the message has a streaming flag in metadata
-    React.useEffect(() => {
-        if (msg.metadata && msg.metadata.streaming) {
-            start()
-        }
-        return () => {
-            // do not persist final here; just stop updates
-            stop()
-        }
-    }, [msg.metadata && msg.metadata.streaming])
+const ReasoningTimerWrapper = React.memo(function ReasoningTimerWrapper({
+    msgId,
+    finalMs: persistedFinalMs
+}: {
+    msgId: string
+    finalMs?: number | null
+}) {
+    // Just subscribe to the timer state - App.tsx manages start/stop
+    const { running, elapsedMs } = useReasoningTimer(msgId)
 
     // if there's a persisted final duration, show that
-    if (msg.metadata && typeof msg.metadata.reasoningTimerMs === 'number') {
-        return <ElapsedDisplay finalMs={msg.metadata.reasoningTimerMs} />
+    if (typeof persistedFinalMs === 'number') {
+        return <ElapsedDisplay finalMs={persistedFinalMs} />
     }
 
-    // show live elapsed when running, otherwise show placeholder
-    return <ElapsedDisplay running={running} elapsedMs={elapsedMs} finalMs={null} />
-}
+    // show live elapsed when running
+    if (running) {
+        return <ElapsedDisplay running={running} elapsedMs={elapsedMs} finalMs={null} />
+    }
+
+    // show nothing if not running and no final time
+    return null
+})
