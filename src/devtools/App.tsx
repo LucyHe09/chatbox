@@ -3,6 +3,7 @@ import './App.css';
 import Block from './Block'
 import * as client from './client'
 import SessionItem from './SessionItem'
+import { startTimerForId, setFinalTimerForId, stopTimerForId } from './hooks/useReasoningTimer'
 import {
     Toolbar, Box, Badge, Snackbar,
     List, ListSubheader, ListItemText, MenuList,
@@ -107,36 +108,69 @@ function Main() {
     }
 
     const generate = async (session: Session, promptMsgs: Message[], targetMsg: Message) => {
-        await client.replay(
-            store.settings.openaiKey,
-            store.settings.apiHost,
-            promptMsgs,
-            (text) => {
-                for (let i = 0; i < session.messages.length; i++) {
-                    if (session.messages[i].id === targetMsg.id) {
-                        session.messages[i] = {
-                            ...session.messages[i],
-                            content: text,
-                        }
-                        break
-                    }
-                }
+        if (!targetMsg.metadata) targetMsg.metadata = {}
+
+        const preservedStart = typeof targetMsg.metadata._reasoningStart === 'number'
+            ? targetMsg.metadata._reasoningStart
+            : null
+        const startMs = preservedStart ?? performance.now()
+
+        const startIfNeeded = () => {
+            if (!targetMsg.metadata.streaming) {
+                targetMsg.metadata.reasoning = true
+                targetMsg.metadata.streaming = true
+                targetMsg.metadata._reasoningStart = startMs
                 store.updateChatSession(session)
-                setScrollToMsg({ msgId: targetMsg.id, smooth: false })
-            },
-            (err) => {
-                for (let i = 0; i < session.messages.length; i++) {
-                    if (session.messages[i].id === targetMsg.id) {
-                        session.messages[i] = {
-                            ...session.messages[i],
-                            content: 'API Request Failed: \n```\n' + err.message + '\n```',
-                        }
-                        break
-                    }
-                }
-                store.updateChatSession(session)
+                startTimerForId(targetMsg.id)
             }
-        )
+        }
+
+        const finalize = () => {
+            if (!targetMsg.metadata || !targetMsg.metadata.streaming && typeof targetMsg.metadata.reasoningTimerMs === 'number') return
+            const base = typeof targetMsg.metadata._reasoningStart === 'number' ? targetMsg.metadata._reasoningStart : startMs
+            const finalMs = Math.round(performance.now() - base)
+            targetMsg.metadata.reasoningTimerMs = finalMs
+            targetMsg.metadata.streaming = false
+            delete targetMsg.metadata._reasoningStart
+            setFinalTimerForId(targetMsg.id, finalMs)
+            stopTimerForId(targetMsg.id)
+            store.updateChatSession(session)
+        }
+
+        startIfNeeded()
+
+        try {
+            await client.replay(
+                store.settings.openaiKey,
+                store.settings.apiHost,
+                promptMsgs,
+                (text) => {
+                    for (let i = 0; i < session.messages.length; i++) {
+                        if (session.messages[i].id === targetMsg.id) {
+                            session.messages[i] = { ...session.messages[i], content: text }
+                            break
+                        }
+                    }
+                    store.updateChatSession(session)
+                    setScrollToMsg({ msgId: targetMsg.id, smooth: false })
+                },
+                (err) => {
+                    for (let i = 0; i < session.messages.length; i++) {
+                        if (session.messages[i].id === targetMsg.id) {
+                            session.messages[i] = {
+                                ...session.messages[i],
+                                content: 'API Request Failed: \n```\n' + err.message + '\n```',
+                            }
+                            break
+                        }
+                    }
+                    finalize()
+                }
+            )
+            finalize()
+        } catch (error) {
+            finalize()
+        }
     }
 
     const [ messageInput, setMessageInput ] = useState('')

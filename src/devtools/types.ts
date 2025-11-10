@@ -4,6 +4,11 @@ import { ThemeMode } from './theme';
 
 export type Message = ChatCompletionRequestMessage & {
     id: string
+    metadata?: {
+        reasoning?: boolean
+        reasoningTimerMs?: number | null
+        [key: string]: any
+    }
 }
 
 export interface Session{

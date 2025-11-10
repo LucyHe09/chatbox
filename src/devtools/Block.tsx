@@ -1,4 +1,7 @@
 import { useEffect, useState, useRef ,useMemo } from 'react';
+import ElapsedDisplay from './ElapsedDisplay'
+import useReasoningTimer from './hooks/useReasoningTimer'
+import React from 'react'
 import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from './openai-node';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
@@ -47,6 +50,11 @@ md.use(mila, { attrs: { target: "_blank", rel: "noopener" } })
 
 export type Message = ChatCompletionRequestMessage & {
     id: string
+    metadata?: {
+        reasoning?: boolean
+        reasoningTimerMs?: number | null
+        [key: string]: any
+    }
 }
 
 export interface Props {
@@ -134,9 +142,19 @@ function _Block(props: Props) {
                 <Grid item xs={11} sm container>
                     <Grid item xs container direction="column" spacing={2}>
                         <Grid item xs>
-                            <Typography variant="overline" component="div">
-                                {msg.role}
-                            </Typography>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="overline" component="div">
+                                    {msg.role}
+                                </Typography>
+                                {
+                                    msg.metadata && msg.metadata.reasoning && (
+                                        <ReasoningTimerWrapper
+                                            msgId={msg.id}
+                                            finalMs={msg.metadata.reasoningTimerMs}
+                                        />
+                                    )
+                                }
+                            </div>
                             {
                                 isEditing ? (
                                     <TextField
@@ -282,5 +300,34 @@ const StyledMenu = styled((props: MenuProps) => (
 export default function Block(props: Props) {
     return useMemo(() => {
         return <_Block {...props} />
-    }, [props.msg, props.showWordCount, props.showTokenCount])
+    }, [
+        props.msg.id,
+        props.msg.content,
+        props.msg.role,
+        props.msg.metadata?.reasoning,
+        props.msg.metadata?.streaming,
+        props.msg.metadata?.reasoningTimerMs,
+        props.showWordCount,
+        props.showTokenCount
+    ])
 }
+
+const ReasoningTimerWrapper = React.memo(function ReasoningTimerWrapper({
+    msgId,
+    finalMs: persistedFinalMs
+}: {
+    msgId: string
+    finalMs?: number | null
+}) {
+    const { running, elapsedMs } = useReasoningTimer(msgId)
+
+    if (typeof persistedFinalMs === 'number') {
+        return <ElapsedDisplay finalMs={persistedFinalMs} />
+    }
+
+    if (running) {
+        return <ElapsedDisplay running={running} elapsedMs={elapsedMs} finalMs={null} />
+    }
+
+    return null
+})
