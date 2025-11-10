@@ -147,7 +147,6 @@ function _Block(props: Props) {
                                     {msg.role}
                                 </Typography>
                                 {
-                                    // Show timer for reasoning blocks (handles both streaming and completed states)
                                     msg.metadata && msg.metadata.reasoning && (
                                         <ReasoningTimerWrapper
                                             msgId={msg.id}
@@ -320,19 +319,15 @@ const ReasoningTimerWrapper = React.memo(function ReasoningTimerWrapper({
     msgId: string
     finalMs?: number | null
 }) {
-    // Just subscribe to the timer state - App.tsx manages start/stop
     const { running, elapsedMs } = useReasoningTimer(msgId)
 
-    // if there's a persisted final duration, show that
     if (typeof persistedFinalMs === 'number') {
         return <ElapsedDisplay finalMs={persistedFinalMs} />
     }
 
-    // show live elapsed when running
     if (running) {
         return <ElapsedDisplay running={running} elapsedMs={elapsedMs} finalMs={null} />
     }
 
-    // show nothing if not running and no final time
     return null
 })

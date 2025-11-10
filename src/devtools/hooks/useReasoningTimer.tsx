@@ -83,11 +83,9 @@ class TimerManager {
     subscribe(id: string, cb: Subscriber) {
         if (!this.subs.has(id)) this.subs.set(id, new Set())
         this.subs.get(id)!.add(cb)
-        // ensure there is an entry
         if (!this.timers.has(id)) {
             this.timers.set(id, { startMs: performance.now(), elapsedMs: 0, running: false, finalMs: null })
         }
-        // push initial state
         const t = this.timers.get(id)!
         cb({ running: t.running, elapsedMs: t.elapsedMs, finalMs: t.finalMs })
         return () => {
@@ -99,7 +97,6 @@ class TimerManager {
 
 const manager = new TimerManager(100)
 
-// exported helpers for non-react contexts to control timers by id
 export function startTimerForId(messageId: string) {
     manager.start(messageId)
 }
