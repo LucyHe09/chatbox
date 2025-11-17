@@ -208,21 +208,14 @@ function Main() {
                                         }}
                                         editMe={() => setConfigureChatConfig(session)}
                                         exportMe={async () => {
-                                            // Trigger IPC call to export session
                                             try {
                                                 const result = await exportSession(session);
                                                 if (result.success) {
-                                                    console.log('Session exported successfully to:', result.filePath);
                                                     store.addToast('Session exported successfully');
-                                                } else if (result.cancelled) {
-                                                    console.log('Export cancelled by user');
-                                                    // No toast for cancellation as per requirements
                                                 } else {
-                                                    console.error('Export failed:', result.error);
                                                     store.addToast(`Export failed: ${result.error || 'Unknown error'}`);
                                                 }
                                             } catch (err: any) {
-                                                console.error('Export session error:', err);
                                                 store.addToast(`Export failed: ${err.message || 'Unknown error'}`);
                                             }
                                         }}

@@ -107,13 +107,10 @@ updateElectronApp({
 
 ipcMain.handle('shouldUseDarkColors', () => nativeTheme.shouldUseDarkColors);
 
-// Export session handler
 ipcMain.handle('exportSession', async (event, sessionData) => {
     try {
-        // Suggest a filename based on the session name
         const suggestedName = `${sessionData.name.replace(/[^a-z0-9]/gi, '_')}.json`;
 
-        // Show save dialog
         const result = await dialog.showSaveDialog({
             title: 'Export Session',
             defaultPath: path.join(app.getPath('documents'), suggestedName),
@@ -124,12 +121,10 @@ ipcMain.handle('exportSession', async (event, sessionData) => {
             ]
         });
 
-        // User cancelled the dialog
         if (result.canceled || !result.filePath) {
             return { success: false, cancelled: true };
         }
 
-        // Prepare the export data with only the required fields
         const exportData = {
             id: sessionData.id,
             name: sessionData.name,
@@ -140,7 +135,6 @@ ipcMain.handle('exportSession', async (event, sessionData) => {
             }))
         };
 
-        // Write the file with 2-space indentation
         await fs.promises.writeFile(
             result.filePath,
             JSON.stringify(exportData, null, 2),
@@ -149,7 +143,6 @@ ipcMain.handle('exportSession', async (event, sessionData) => {
 
         return { success: true, filePath: result.filePath };
     } catch (error: any) {
-        console.error('Export session error:', error);
         return { success: false, error: error.message };
     }
 });
