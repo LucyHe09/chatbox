@@ -24,6 +24,15 @@ export const shouldUseDarkColors = (): Promise<boolean> => {
     return api.invoke('shouldUseDarkColors');
 };
 
+export const exportSession = (session: Session): Promise<{
+    success: boolean;
+    cancelled?: boolean;
+    filePath?: string;
+    error?: string;
+}> => {
+    return (window as any).api.invoke('exportSession', session);
+};
+
 // setting store
 
 export function getDefaultSettings(): Settings {

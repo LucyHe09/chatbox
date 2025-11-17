@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { Session, createSession, Message, createMessage } from './types'
 import ChatIcon from '@mui/icons-material/Chat';
-import useStore, { openLink } from './store'
+import useStore, { openLink, exportSession } from './store'
 import SettingWindow from './SettingWindow'
 import ChatConfigWindow from './ChatConfigWindow'
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
@@ -207,6 +207,18 @@ function Main() {
                                             store.createChatSession(newSession, ix)
                                         }}
                                         editMe={() => setConfigureChatConfig(session)}
+                                        exportMe={async () => {
+                                            try {
+                                                const result = await exportSession(session);
+                                                if (result.success) {
+                                                    store.addToast('Session exported successfully');
+                                                } else {
+                                                    store.addToast(`Export failed: ${result.error || 'Unknown error'}`);
+                                                }
+                                            } catch (err: any) {
+                                                store.addToast(`Export failed: ${err.message || 'Unknown error'}`);
+                                            }
+                                        }}
                                     />
                                 ))
                             }
