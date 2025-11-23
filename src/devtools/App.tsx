@@ -145,6 +145,42 @@ function Main() {
         document.getElementById('message-input')?.focus() // better way?
     }, [messageInput])
 
+    const handleImport = async () => {
+        try {
+            const result = await importSession();
+
+            // user cancelled — nothing to do
+            if (result.cancelled) return;
+
+            if (result.success && result.sessionData) {
+                const existingSession = store.chatSessions.find(s => s.id === result.sessionData.id);
+                if (existingSession) {
+                    const newSession = {
+                        ...result.sessionData,
+                        id: createSession().id,
+                        name: result.sessionData.name + ' (Imported)'
+                    };
+                    store.createChatSession(newSession);
+                } else {
+                    store.createChatSession(result.sessionData);
+                }
+                store.addToast('Session imported successfully');
+
+                if (result.warnings && result.warnings.length > 0) {
+                    console.warn('Import warnings:', result.warnings);
+                    setTimeout(() => {
+                        store.addToast(`Warning: ${result.warnings[0]}`);
+                    }, 1500);
+                }
+                return;
+            }
+
+            store.addToast(`Import failed: ${result.error || 'Unknown error'}`);
+        } catch (err: any) {
+            store.addToast(`Import failed: ${err.message || 'Unknown error'}`);
+        }
+    }
+
     return (
         <Box sx={{
             height: '100%',
@@ -238,44 +274,7 @@ function Main() {
                                 {/* ⌘N */}
                             </Typography>
                         </MenuItem>
-                        <MenuItem onClick={async () => {
-                            try {
-                                const result = await importSession();
-                                if (result.success && result.sessionData) {
-                                    // Check if session with same ID already exists
-                                    const existingSession = store.chatSessions.find(s => s.id === result.sessionData.id);
-                                    if (existingSession) {
-                                        // For now, we'll create a new session with a different ID
-                                        // In the future, we'll implement proper duplicate handling
-                                        const newSession = {
-                                            ...result.sessionData,
-                                            id: createSession().id, // Generate new ID
-                                            name: result.sessionData.name + ' (Imported)'
-                                        };
-                                        store.createChatSession(newSession);
-                                        store.addToast('Session imported successfully');
-                                    } else {
-                                        store.createChatSession(result.sessionData);
-                                        store.addToast('Session imported successfully');
-                                    }
-
-                                    // Show warnings if any
-                                    if (result.warnings && result.warnings.length > 0) {
-                                        console.warn('Import warnings:', result.warnings);
-                                        // Show the first warning as a toast (you can enhance this to show all warnings)
-                                        setTimeout(() => {
-                                            store.addToast(`Warning: ${result.warnings[0]}`);
-                                        }, 1500);
-                                    }
-                                } else if (result.cancelled) {
-                                    // User cancelled, no need to show a message
-                                } else {
-                                    store.addToast(`Import failed: ${result.error || 'Unknown error'}`);
-                                }
-                            } catch (err: any) {
-                                store.addToast(`Import failed: ${err.message || 'Unknown error'}`);
-                            }
-                        }}>
+                        <MenuItem onClick={handleImport}>
                             <ListItemIcon>
                                 <IconButton><FileDownloadIcon fontSize="small" /></IconButton>
                             </ListItemIcon>
