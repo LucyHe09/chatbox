@@ -11,13 +11,14 @@ import {
 } from '@mui/material';
 import { Session, createSession, Message, createMessage } from './types'
 import ChatIcon from '@mui/icons-material/Chat';
-import useStore, { openLink, exportSession } from './store'
+import useStore, { openLink, exportSession, importSession } from './store'
 import SettingWindow from './SettingWindow'
 import ChatConfigWindow from './ChatConfigWindow'
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import * as prompts from './prompts'
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CleanWidnow from './CleanWindow';
@@ -235,6 +236,45 @@ function Main() {
                             </ListItemText>
                             <Typography variant="body2" color="text.secondary">
                                 {/* ⌘N */}
+                            </Typography>
+                        </MenuItem>
+                        <MenuItem onClick={async () => {
+                            try {
+                                const result = await importSession();
+                                if (result.success && result.sessionData) {
+                                    // Check if session with same ID already exists
+                                    const existingSession = store.chatSessions.find(s => s.id === result.sessionData.id);
+                                    if (existingSession) {
+                                        // For now, we'll create a new session with a different ID
+                                        // In the future, we'll implement proper duplicate handling
+                                        const newSession = {
+                                            ...result.sessionData,
+                                            id: createSession().id, // Generate new ID
+                                            name: result.sessionData.name + ' (Imported)'
+                                        };
+                                        store.createChatSession(newSession);
+                                        store.addToast('Session imported successfully');
+                                    } else {
+                                        store.createChatSession(result.sessionData);
+                                        store.addToast('Session imported successfully');
+                                    }
+                                } else if (result.cancelled) {
+                                    // User cancelled, no need to show a message
+                                } else {
+                                    store.addToast(`Import failed: ${result.error || 'Unknown error'}`);
+                                }
+                            } catch (err: any) {
+                                store.addToast(`Import failed: ${err.message || 'Unknown error'}`);
+                            }
+                        }}>
+                            <ListItemIcon>
+                                <IconButton><FileDownloadIcon fontSize="small" /></IconButton>
+                            </ListItemIcon>
+                            <ListItemText>
+                                Import Session
+                            </ListItemText>
+                            <Typography variant="body2" color="text.secondary">
+                                {/* ⌘I */}
                             </Typography>
                         </MenuItem>
                         <MenuItem onClick={() => {

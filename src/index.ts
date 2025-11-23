@@ -147,4 +147,50 @@ ipcMain.handle('exportSession', async (event, sessionData) => {
     }
 });
 
+ipcMain.handle('importSession', async () => {
+    try {
+        const result = await dialog.showOpenDialog({
+            title: 'Import Session',
+            buttonLabel: 'Import',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'All Files', extensions: ['*'] }
+            ],
+            properties: ['openFile']
+        });
+
+        if (result.canceled || !result.filePaths[0]) {
+            return { success: false, cancelled: true };
+        }
+
+        const fileContent = await fs.promises.readFile(result.filePaths[0], 'utf-8');
+        const sessionData = JSON.parse(fileContent);
+
+        // Basic validation
+        if (!sessionData.id || !sessionData.name || !Array.isArray(sessionData.messages)) {
+            return {
+                success: false,
+                error: 'Invalid session file format. Missing required fields (id, name, or messages).'
+            };
+        }
+
+        // Validate message structure
+        for (const message of sessionData.messages) {
+            if (!message.id || !message.role || message.content === undefined) {
+                return {
+                    success: false,
+                    error: 'Invalid message format. Each message must have id, role, and content.'
+                };
+            }
+        }
+
+        return { success: true, sessionData };
+    } catch (error: any) {
+        if (error instanceof SyntaxError) {
+            return { success: false, error: 'Invalid JSON file format.' };
+        }
+        return { success: false, error: error.message };
+    }
+});
+
 // updateElectronApp()

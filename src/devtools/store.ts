@@ -33,6 +33,15 @@ export const exportSession = (session: Session): Promise<{
     return (window as any).api.invoke('exportSession', session);
 };
 
+export const importSession = (): Promise<{
+    success: boolean;
+    cancelled?: boolean;
+    sessionData?: Session;
+    error?: string;
+}> => {
+    return (window as any).api.invoke('importSession');
+};
+
 // setting store
 
 export function getDefaultSettings(): Settings {
