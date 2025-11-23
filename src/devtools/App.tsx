@@ -258,6 +258,15 @@ function Main() {
                                         store.createChatSession(result.sessionData);
                                         store.addToast('Session imported successfully');
                                     }
+
+                                    // Show warnings if any
+                                    if (result.warnings && result.warnings.length > 0) {
+                                        console.warn('Import warnings:', result.warnings);
+                                        // Show the first warning as a toast (you can enhance this to show all warnings)
+                                        setTimeout(() => {
+                                            store.addToast(`Warning: ${result.warnings[0]}`);
+                                        }, 1500);
+                                    }
                                 } else if (result.cancelled) {
                                     // User cancelled, no need to show a message
                                 } else {

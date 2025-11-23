@@ -38,6 +38,7 @@ export const importSession = (): Promise<{
     cancelled?: boolean;
     sessionData?: Session;
     error?: string;
+    warnings?: string[];
 }> => {
     return (window as any).api.invoke('importSession');
 };
