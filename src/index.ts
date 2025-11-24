@@ -166,39 +166,32 @@ ipcMain.handle('importSession', async () => {
 
         const filePath = result.filePaths[0];
 
-        // Check file size
         const stats = await fs.promises.stat(filePath);
         const sizeValidation = validateFileSize(stats.size);
         if (!sizeValidation.isValid) {
             return { success: false, error: sizeValidation.error };
         }
 
-        // Read file content
         const fileContent = await fs.promises.readFile(filePath, 'utf-8');
 
-        // Parse and validate JSON
         const parseResult = validateJSONParse(fileContent);
         if (parseResult.error) {
             return { success: false, error: parseResult.error };
         }
 
-        // Comprehensive validation
         const validationResult = validateSession(parseResult.data);
         if (!validationResult.isValid) {
             return { success: false, error: validationResult.error };
         }
 
-        // Sanitize the data (remove invalid optional fields)
         const sanitizedData = sanitizeSessionData(parseResult.data);
 
-        // Return success with warnings if any
         return {
             success: true,
             sessionData: sanitizedData,
             warnings: validationResult.warnings
         };
     } catch (error: any) {
-        // Handle file system errors
         if (error.code === 'ENOENT') {
             return { success: false, error: 'File not found. Please select a valid file.' };
         }

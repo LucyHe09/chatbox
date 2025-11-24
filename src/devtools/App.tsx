@@ -149,7 +149,6 @@ function Main() {
         try {
             const result = await importSession();
 
-            // user cancelled — nothing to do
             if (result.cancelled) return;
 
             if (result.success && result.sessionData) {
