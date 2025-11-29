@@ -10,6 +10,7 @@ export interface Session{
     id: string
     name: string
     messages: Message[]
+    pinned?: boolean
 }
 
 export function createMessage(role: ChatCompletionRequestMessageRoleEnum = ChatCompletionRequestMessageRoleEnum.User, content: string = ''): Message {

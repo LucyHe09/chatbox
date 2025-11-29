@@ -23,10 +23,16 @@ import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CleanWidnow from './CleanWindow';
 import { ThemeSwitcherProvider } from './theme/ThemeSwitcher';
 
-const { useEffect, useState } = React
+const { useEffect, useState, useMemo } = React
 
 function Main() {
     const store = useStore()
+
+    const sortedSessions = useMemo(() => {
+        const pinned = store.chatSessions.filter((s) => s.pinned)
+        const unpinned = store.chatSessions.filter((s) => !s.pinned)
+        return [...pinned, ...unpinned]
+    }, [store.chatSessions])
 
     // 是否展示设置窗口
     const [openSettingWindow, setOpenSettingWindow] = React.useState(false);
@@ -193,9 +199,10 @@ function Main() {
                             }
                         >
                             {
-                                store.chatSessions.map((session, ix) => (
+                                sortedSessions.map((session, ix) => (
                                     <SessionItem selected={store.currentSession.id === session.id}
                                         session={session}
+                                        pinned={session.pinned ?? false}
                                         switchMe={() => {
                                             store.switchCurrentSession(session)
                                             document.getElementById('message-input')?.focus() // better way?
@@ -207,6 +214,7 @@ function Main() {
                                             store.createChatSession(newSession, ix)
                                         }}
                                         editMe={() => setConfigureChatConfig(session)}
+                                        pinMe={() => store.pinSession(session)}
                                     />
                                 ))
                             }
