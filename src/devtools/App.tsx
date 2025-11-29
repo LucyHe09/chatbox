@@ -166,7 +166,6 @@ function Main() {
                 store.addToast('Session imported successfully');
 
                 if (result.warnings && result.warnings.length > 0) {
-                    console.warn('Import warnings:', result.warnings);
                     setTimeout(() => {
                         store.addToast(`Warning: ${result.warnings[0]}`);
                     }, 1500);
