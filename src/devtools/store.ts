@@ -159,6 +159,20 @@ export default function useStore() {
         })
     }
 
+    const pinSession = (session: Session) => {
+        const isPinned = session.pinned ?? false
+        if (isPinned) {
+            updateChatSession({ ...session, pinned: false })
+        } else {
+            const pinnedCount = chatSessions.filter((s) => s.pinned).length
+            if (pinnedCount >= 3) {
+                addToast('Maximum 3 chats can be pinned')
+                return
+            }
+            updateChatSession({ ...session, pinned: true })
+        }
+    }
+
     const [toasts, _setToasts] = useState<{id: string, content: string}[]>([])
     const addToast = (content: string) => {
         const id = uuidv4()
@@ -180,6 +194,7 @@ export default function useStore() {
         updateChatSession,
         deleteChatSession,
         createEmptyChatSession,
+        pinSession,
 
         currentSession,
         switchCurrentSession,

@@ -13,6 +13,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import MoreHorizOutlinedIcon from '@mui/icons-material/MoreHorizOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import StyledMenu from './StyledMenu';
 
 const { useState } = React
@@ -20,14 +22,16 @@ const { useState } = React
 export interface Props {
     session: Session
     selected: boolean
+    pinned: boolean
     switchMe: () => void
     deleteMe: () => void
     copyMe: () => void
     editMe: () => void
+    pinMe: () => void
 }
 
 export default function SessionItem(props: Props) {
-    const { session, selected, switchMe, deleteMe, copyMe, editMe } = props
+    const { session, selected, pinned, switchMe, deleteMe, copyMe, editMe, pinMe } = props
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -52,6 +56,15 @@ export default function SessionItem(props: Props) {
                     {session.name}
                 </Typography>
             </ListItemText>
+            <IconButton
+                onClick={(e) => {
+                    e.stopPropagation()
+                    pinMe()
+                }}
+                size="small"
+            >
+                {pinned ? <PushPinIcon fontSize="small" /> : <PushPinOutlinedIcon fontSize="small" />}
+            </IconButton>
             <IconButton onClick={handleClick}>
                 <MoreHorizOutlinedIcon />
             </IconButton>
