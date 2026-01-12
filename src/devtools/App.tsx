@@ -11,13 +11,14 @@ import {
 } from '@mui/material';
 import { Session, createSession, Message, createMessage } from './types'
 import ChatIcon from '@mui/icons-material/Chat';
-import useStore, { openLink } from './store'
+import useStore, { openLink, exportSession, importSession } from './store'
 import SettingWindow from './SettingWindow'
 import ChatConfigWindow from './ChatConfigWindow'
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import * as prompts from './prompts'
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CleanWidnow from './CleanWindow';
@@ -144,6 +145,40 @@ function Main() {
         document.getElementById('message-input')?.focus() // better way?
     }, [messageInput])
 
+    const handleImport = async () => {
+        try {
+            const result = await importSession();
+
+            if (result.cancelled) return;
+
+            if (result.success && result.sessionData) {
+                const existingSession = store.chatSessions.find(s => s.id === result.sessionData.id);
+                if (existingSession) {
+                    const newSession = {
+                        ...result.sessionData,
+                        id: createSession().id,
+                        name: result.sessionData.name + ' (Imported)'
+                    };
+                    store.createChatSession(newSession);
+                } else {
+                    store.createChatSession(result.sessionData);
+                }
+                store.addToast('Session imported successfully');
+
+                if (result.warnings && result.warnings.length > 0) {
+                    setTimeout(() => {
+                        store.addToast(`Warning: ${result.warnings[0]}`);
+                    }, 1500);
+                }
+                return;
+            }
+
+            store.addToast(`Import failed: ${result.error || 'Unknown error'}`);
+        } catch (err: any) {
+            store.addToast(`Import failed: ${err.message || 'Unknown error'}`);
+        }
+    }
+
     return (
         <Box sx={{
             height: '100%',
@@ -207,6 +242,18 @@ function Main() {
                                             store.createChatSession(newSession, ix)
                                         }}
                                         editMe={() => setConfigureChatConfig(session)}
+                                        exportMe={async () => {
+                                            try {
+                                                const result = await exportSession(session);
+                                                if (result.success) {
+                                                    store.addToast('Session exported successfully');
+                                                } else {
+                                                    store.addToast(`Export failed: ${result.error || 'Unknown error'}`);
+                                                }
+                                            } catch (err: any) {
+                                                store.addToast(`Export failed: ${err.message || 'Unknown error'}`);
+                                            }
+                                        }}
                                     />
                                 ))
                             }
@@ -223,6 +270,17 @@ function Main() {
                             </ListItemText>
                             <Typography variant="body2" color="text.secondary">
                                 {/* ⌘N */}
+                            </Typography>
+                        </MenuItem>
+                        <MenuItem onClick={handleImport}>
+                            <ListItemIcon>
+                                <IconButton><FileDownloadIcon fontSize="small" /></IconButton>
+                            </ListItemIcon>
+                            <ListItemText>
+                                Import Session
+                            </ListItemText>
+                            <Typography variant="body2" color="text.secondary">
+                                {/* ⌘I */}
                             </Typography>
                         </MenuItem>
                         <MenuItem onClick={() => {
